@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "skar",
+    "format",
+    "rpc-client",
+]
