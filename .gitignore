@@ -14,3 +14,5 @@ Cargo.lock
 .idea/
 .vscode/
 .DS_Store
+
+skar.toml
