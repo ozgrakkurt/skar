@@ -2,7 +2,12 @@ name: CI
 
 on:
   pull_request:
-    branches: [ $default-branch ]
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   CARGO_TERM_COLOR: always
@@ -12,6 +17,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v3
     - name: Build
@@ -23,6 +29,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v3
     - name: Build
@@ -37,4 +44,4 @@ jobs:
     - name: Rustfmt
       run: cargo fmt --check --verbose
     - name: Clippy
-      run: cargo clippy --verbose
+      run: cargo clippy --verbose --all-features -- -D clippy::all
