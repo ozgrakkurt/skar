@@ -1,6 +1,8 @@
 use arrayvec::ArrayVec;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct BlockHeader {
     pub number: BlockNumber,
     pub hash: Hash,
@@ -22,13 +24,16 @@ pub struct BlockHeader {
     pub uncles: Box<[Hash]>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Block {
+    #[serde(flatten)]
     pub header: BlockHeader,
     pub transactions: Box<[Transaction]>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Transaction {
     pub block_hash: Hash,
     pub block_number: BlockNumber,
@@ -46,7 +51,8 @@ pub struct Transaction {
     pub s: Unsigned256,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TransactionReceipt {
     pub transaction_hash: Hash,
     pub transaction_index: TransactionIndex,
@@ -60,13 +66,14 @@ pub struct TransactionReceipt {
     pub contract_address: Option<Address>,
     pub logs: Box<[Log]>,
     pub logs_bloom: BloomFilter,
-    //#[serde(rename = "type")]
+    #[serde(rename = "type")]
     pub kind: TransactionType,
     pub root: Option<Hash>,
     pub status: Option<Status>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Log {
     pub removed: bool,
     pub log_index: LogIndex,
@@ -81,6 +88,7 @@ pub struct Log {
 
 #[derive(
     Debug,
+    Default,
     Clone,
     Copy,
     PartialEq,
@@ -89,36 +97,83 @@ pub struct Log {
     derive_more::From,
     derive_more::Into,
     derive_more::Deref,
+    Serialize,
+    Deserialize,
 )]
+#[serde(transparent)]
 pub struct BlockNumber(Index);
 
 #[derive(
-    Debug, Clone, PartialEq, Eq, Hash, derive_more::From, derive_more::Into, derive_more::Deref,
+    Debug,
+    Default,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    derive_more::From,
+    derive_more::Into,
+    derive_more::Deref,
+    Serialize,
+    Deserialize,
 )]
+#[serde(transparent)]
 pub struct Hash(Bytes32);
 
 #[derive(
-    Debug, Clone, PartialEq, Eq, Hash, derive_more::From, derive_more::Into, derive_more::Deref,
+    Debug,
+    Default,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    derive_more::From,
+    derive_more::Into,
+    derive_more::Deref,
 )]
 pub struct Nonce(Box<[u8; 8]>);
 
 #[derive(
-    Debug, Clone, PartialEq, Eq, Hash, derive_more::From, derive_more::Into, derive_more::Deref,
+    Debug,
+    Default,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    derive_more::From,
+    derive_more::Into,
+    derive_more::Deref,
 )]
 pub struct BloomFilter(Box<[u8; 256]>);
 
 #[derive(
-    Debug, Clone, PartialEq, Eq, Hash, derive_more::From, derive_more::Into, derive_more::Deref,
+    Debug,
+    Default,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    derive_more::From,
+    derive_more::Into,
+    derive_more::Deref,
 )]
 pub struct Address(Box<[u8; 20]>);
 
 #[derive(
-    Debug, Clone, PartialEq, Eq, Hash, derive_more::From, derive_more::Into, derive_more::Deref,
+    Debug,
+    Default,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    derive_more::From,
+    derive_more::Into,
+    derive_more::Deref,
 )]
 pub struct Unsigned256(Box<[u8; 32]>);
 
 #[derive(
     Debug,
+    Default,
     Clone,
     Copy,
     PartialEq,
@@ -127,11 +182,15 @@ pub struct Unsigned256(Box<[u8; 32]>);
     derive_more::From,
     derive_more::Into,
     derive_more::Deref,
+    Serialize,
+    Deserialize,
 )]
+#[serde(transparent)]
 pub struct TransactionIndex(Index);
 
 #[derive(
     Debug,
+    Default,
     Clone,
     Copy,
     PartialEq,
@@ -140,21 +199,44 @@ pub struct TransactionIndex(Index);
     derive_more::From,
     derive_more::Into,
     derive_more::Deref,
+    Serialize,
+    Deserialize,
 )]
+#[serde(transparent)]
 pub struct LogIndex(Index);
 
 #[derive(
-    Debug, Clone, PartialEq, Eq, Hash, derive_more::From, derive_more::Into, derive_more::Deref,
+    Debug,
+    Default,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    derive_more::From,
+    derive_more::Into,
+    derive_more::Deref,
+    Serialize,
+    Deserialize,
 )]
+#[serde(transparent)]
 pub struct LogArgument(Bytes32);
 
 #[derive(
-    Debug, Clone, PartialEq, Eq, Hash, derive_more::From, derive_more::Into, derive_more::Deref,
+    Debug,
+    Default,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    derive_more::From,
+    derive_more::Into,
+    derive_more::Deref,
 )]
 pub struct Bytes32(Box<[u8; 32]>);
 
 #[derive(
     Debug,
+    Default,
     Clone,
     Copy,
     PartialEq,
@@ -175,6 +257,7 @@ pub enum TransactionType {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Status {
+    #[default]
     Success,
     Failure,
 }
