@@ -1,5 +1,5 @@
 # skar
-_**skar**_ is an archive for EVM chains. It indexes the data from blockchain node and serves the Ethereum RPC API. It is much less resource intensive to run compared to an archival blockchain node and gives better or equal performance on Ethereum RPC API calls.
+_**skar**_ is an archive for EVM chains. It indexes the data from blockchain node and serves the Ethereum RPC API. It is much less resource intensive to run compared to an archival blockchain node and gives better or equal performance on Ethereum RPC API calls compared to blockchain node implementations.
 
 ### Supported Methods (0/48)
 
