@@ -18,6 +18,10 @@ impl<'de> Visitor<'de> for IndexVisitor {
     where
         E: de::Error,
     {
+        let value = value
+            .strip_prefix("0x")
+            .ok_or_else(|| E::custom("invalid hex prefix"))?;
+
         u64::from_str_radix(value, 16)
             .map_err(|e| E::custom(e.to_string()))
             .map(Into::into)
@@ -38,7 +42,9 @@ impl Serialize for Index {
     where
         S: Serializer,
     {
-        serializer.serialize_str(&self.to_string())
+        let hex = prefix_hex::encode(self.to_be_bytes());
+
+        serializer.serialize_str(&hex)
     }
 }
 
