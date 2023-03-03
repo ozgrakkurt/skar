@@ -7,3 +7,4 @@ edition = "2021"
 arrayvec = { version = "0.7", features = ["serde"] }
 derive_more = "0.99"
 serde = { version = "1", features = ["derive"] }
+prefix-hex = "0.5"

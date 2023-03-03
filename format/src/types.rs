@@ -133,15 +133,7 @@ pub struct Hash(Bytes32);
 pub struct Nonce(Box<[u8; 8]>);
 
 #[derive(
-    Debug,
-    Default,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    derive_more::From,
-    derive_more::Into,
-    derive_more::Deref,
+    Debug, Clone, PartialEq, Eq, Hash, derive_more::From, derive_more::Into, derive_more::Deref,
 )]
 pub struct BloomFilter(Box<[u8; 256]>);
 
@@ -168,8 +160,11 @@ pub struct Address(Box<[u8; 20]>);
     derive_more::From,
     derive_more::Into,
     derive_more::Deref,
+    Serialize,
+    Deserialize,
 )]
-pub struct Unsigned256(Box<[u8; 32]>);
+#[serde(transparent)]
+pub struct Unsigned256(Bytes32);
 
 #[derive(
     Debug,
@@ -257,7 +252,12 @@ pub enum TransactionType {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Status {
-    #[default]
     Success,
     Failure,
+}
+
+impl Default for BloomFilter {
+    fn default() -> Self {
+        Self(Box::new([0; 256]))
+    }
 }
