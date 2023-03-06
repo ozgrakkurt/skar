@@ -1,18 +1,18 @@
 use std::result::Result as StdResult;
 use thiserror::Error as ThisError;
-use std::array::TryFromSliceError;
 
 #[derive(Debug, ThisError)]
 pub enum Error {
     #[error("Unexpected length. Expected {expected} got {got}.")]
-    UnexpectedLength {
-        expected: usize,
-        got: usize,
-    },
+    UnexpectedLength { expected: usize, got: usize },
     #[error("Failed to decode hex string:\n{0}")]
     DecodeHex(hex::FromHexError),
-    #[error("Invalid hex prefix. Hex string doesn't start with \"0x\"")]
-    InvalidHexPrefix,
+    #[error("Invalid hex prefix. Hex string doesn't start with \"0x\". Value was: \"{0}\"")]
+    InvalidHexPrefix(String),
+    #[error("Unknown transaction status: {0}")]
+    UnknownTransactionStatus(String),
+    #[error("Unknown transaction type: {0}")]
+    UnknownTransactionType(String),
 }
 
 pub type Result<T> = StdResult<T, Error>;

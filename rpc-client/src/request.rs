@@ -1,4 +1,4 @@
-use skar_format::BlockNumber;
+use skar_format::types::BlockNumber;
 
 pub trait EthRpcRequest {}
 
