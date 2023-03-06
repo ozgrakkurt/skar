@@ -86,8 +86,8 @@ fn decode_hex(value: &str) -> Result<Vec<u8>> {
         .strip_prefix("0x")
         .ok_or_else(|| Error::InvalidHexPrefix(value.to_owned()))?;
 
-    if val.starts_with('0') {
-        return Err(Error::UnexpectedLeadingZeroes(value.to_owned()));
+    if val.is_empty() || val.starts_with('0') {
+        return Err(Error::UnexpectedQuantity(value.to_owned()));
     }
 
     let mut val: Cow<_> = val.into();
@@ -115,7 +115,8 @@ mod tests {
     use serde_test::{assert_de_tokens, assert_ser_tokens, assert_tokens, Token};
 
     #[test]
-    fn test_serde_empty() {
+    fn test_serde_zero() {
+        assert_eq!(Quantity::default(), Quantity::from(vec![0]));
         assert_tokens(&Quantity::default(), &[Token::Str("0x0")]);
     }
 
@@ -138,6 +139,12 @@ mod tests {
             &Quantity::from(hex!("00420000")),
             &[Token::Str("0x00420000")],
         );
+    }
+
+    #[test]
+    #[should_panic(expected = "Unexpected quantity")]
+    fn test_deserialize_empty() {
+        assert_de_tokens(&Quantity::default(), &[Token::Str("0x")]);
     }
 
     #[test]
