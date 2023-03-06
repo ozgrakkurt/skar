@@ -14,11 +14,17 @@ use std::fmt;
     derive_more::Into,
     derive_more::Deref,
 )]
-pub struct Quantity(Vec<u8>);
+pub struct Quantity(Box<[u8]>);
+
+impl From<Vec<u8>> for Quantity {
+    fn from(buf: Vec<u8>) -> Self {
+        Self(buf.into())
+    }
+}
 
 impl From<&[u8]> for Quantity {
     fn from(buf: &[u8]) -> Self {
-        Self(buf.to_owned())
+        Self(buf.into())
     }
 }
 
