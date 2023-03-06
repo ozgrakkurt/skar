@@ -4,8 +4,6 @@ use std::array::TryFromSliceError;
 
 #[derive(Debug, ThisError)]
 pub enum Error {
-    #[error("array from slice error:\n{0}")]
-    ArrayFromSlice(TryFromSliceError),
     #[error("Unexpected length. Expected {expected} got {got}.")]
     UnexpectedLength {
         expected: usize,
