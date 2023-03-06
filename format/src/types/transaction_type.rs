@@ -69,3 +69,22 @@ impl Serialize for TransactionType {
         serializer.serialize_str(self.as_str())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::TransactionType;
+    use serde_test::{assert_de_tokens, assert_tokens, Token};
+
+    #[test]
+    fn test_serde() {
+        assert_tokens(&TransactionType::Legacy, &[Token::Str("0x0")]);
+        assert_tokens(&TransactionType::AccessListType, &[Token::Str("0x1")]);
+        assert_tokens(&TransactionType::DynamicFee, &[Token::Str("0x2")]);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_de_unknown() {
+        assert_de_tokens(&TransactionType::Legacy, &[Token::Str("0x3")]);
+    }
+}

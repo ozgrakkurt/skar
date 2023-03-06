@@ -148,13 +148,13 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_from_vec_empty() {
-        Quantity::from(Vec::new());
+        let _ = Quantity::from(Vec::new());
     }
 
     #[test]
     #[should_panic]
     fn test_from_vec_leading_zeroes() {
-        Quantity::from(vec![0, 1]);
+        let _ = Quantity::from(vec![0, 1]);
     }
 
     #[test]
@@ -165,12 +165,12 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_from_slice_empty() {
-        Quantity::from(Vec::new().as_slice());
+        let _ = Quantity::from(Vec::new().as_slice());
     }
 
     #[test]
     #[should_panic]
     fn test_from_slice_leading_zeroes() {
-        Quantity::from(vec![0, 1].as_slice());
+        let _ = Quantity::from(vec![0, 1].as_slice());
     }
 }

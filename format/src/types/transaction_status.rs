@@ -66,3 +66,21 @@ impl Serialize for TransactionStatus {
         serializer.serialize_str(self.as_str())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::TransactionStatus;
+    use serde_test::{assert_de_tokens, assert_tokens, Token};
+
+    #[test]
+    fn test_serde() {
+        assert_tokens(&TransactionStatus::Success, &[Token::Str("0x1")]);
+        assert_tokens(&TransactionStatus::Failure, &[Token::Str("0x0")]);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_de_unknown() {
+        assert_de_tokens(&TransactionStatus::Success, &[Token::Str("0x3")]);
+    }
+}
