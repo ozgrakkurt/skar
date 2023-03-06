@@ -1,4 +1,4 @@
-use super::hex::encode_hex_quantity;
+use super::quantity::encode_hex;
 use serde::de::{self, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
@@ -54,6 +54,6 @@ impl Serialize for UInt {
     where
         S: Serializer,
     {
-        serializer.serialize_str(&encode_hex_quantity(&self.to_be_bytes()))
+        serializer.serialize_str(&encode_hex(&self.to_be_bytes()))
     }
 }

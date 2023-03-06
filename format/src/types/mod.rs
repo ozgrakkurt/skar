@@ -3,7 +3,6 @@ use serde::{Deserialize, Serialize};
 
 mod data;
 mod fixed_size_data;
-mod hex;
 mod quantity;
 mod transaction_status;
 mod transaction_type;

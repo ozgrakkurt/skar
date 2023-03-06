@@ -13,6 +13,8 @@ pub enum Error {
     UnknownTransactionStatus(String),
     #[error("Unknown transaction type: {0}")]
     UnknownTransactionType(String),
+    #[error("Unexpected leading zeroes. Value was: {0}")]
+    UnexpectedLeadingZeroes(String),
 }
 
 pub type Result<T> = StdResult<T, Error>;

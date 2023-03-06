@@ -1,4 +1,3 @@
-use super::hex::{decode_hex, encode_hex_fixed_size_data};
 use crate::{Error, Result};
 use serde::de::{self, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -13,6 +12,12 @@ pub struct FixedSizeData<const N: usize>(Box<[u8; N]>);
 impl<const N: usize> Default for FixedSizeData<N> {
     fn default() -> Self {
         Self(Box::new([0; N]))
+    }
+}
+
+impl<const N: usize> From<[u8; N]> for FixedSizeData<N> {
+    fn from(buf: [u8; N]) -> Self {
+        Self(Box::new(buf))
     }
 }
 
@@ -76,6 +81,46 @@ impl<const N: usize> Serialize for FixedSizeData<N> {
     where
         S: Serializer,
     {
-        serializer.serialize_str(&encode_hex_fixed_size_data(self.as_ref()))
+        serializer.serialize_str(&encode_hex(self.as_ref()))
+    }
+}
+
+fn encode_hex(buf: &[u8]) -> String {
+    format!("0x{}", hex::encode(buf))
+}
+
+fn decode_hex(value: &str) -> Result<Vec<u8>> {
+    let val = value
+        .strip_prefix("0x")
+        .ok_or_else(|| Error::InvalidHexPrefix(value.to_owned()))?;
+
+    hex::decode(val).map_err(Error::DecodeHex)
+}
+
+#[cfg(test)]
+mod tests {
+    type FixedSizeData = super::FixedSizeData<4>;
+    use hex_literal::hex;
+    use serde_test::{assert_tokens, Token};
+
+    #[test]
+    fn test_serde_empty() {
+        assert_tokens(&FixedSizeData::default(), &[Token::Str("0x00000000")]);
+    }
+
+    #[test]
+    fn test_serde() {
+        assert_tokens(
+            &FixedSizeData::from(hex!("00420000")),
+            &[Token::Str("0x00420000")],
+        );
+        assert_tokens(
+            &FixedSizeData::from(hex!("42000000")),
+            &[Token::Str("0x42000000")],
+        );
+        assert_tokens(
+            &FixedSizeData::from(hex!("00000042")),
+            &[Token::Str("0x00000042")],
+        );
     }
 }
