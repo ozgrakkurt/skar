@@ -1,4 +1,5 @@
-use crate::{Address, BloomFilter, Bytes32, Index, Nonce, Status, TransactionType};
+use crate::Error;
+use crate::{Address, BloomFilter, Bytes, Bytes32, Index, Quantity, Status, TransactionType};
 use serde::de::{self, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
@@ -42,9 +43,7 @@ impl Serialize for Index {
     where
         S: Serializer,
     {
-        let hex = prefix_hex::encode(self.to_be_bytes());
-
-        serializer.serialize_str(&hex)
+        serializer.serialize_str(&encode_hex_int(&self.to_be_bytes()))
     }
 }
 
@@ -146,7 +145,89 @@ impl Serialize for TransactionType {
 
 // @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-macro_rules! impl_serde_for_bytes {
+// @@@@@@@@@@@@@@@@@@@@@@@ Bytes @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+struct BytesVisitor;
+
+impl<'de> Visitor<'de> for BytesVisitor {
+    type Value = Bytes;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("hex string")
+    }
+
+    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        let buf: Vec<u8> = decode_hex(value).map_err(|e| E::custom(e.to_string()))?;
+
+        Ok(Bytes::from(buf))
+    }
+}
+
+impl<'de> Deserialize<'de> for Bytes {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_str(BytesVisitor)
+    }
+}
+
+impl Serialize for Bytes {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&encode_hex(self))
+    }
+}
+
+// @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+// @@@@@@@@@@@@@@@@@@@@@@@ Quantity @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+struct QuantityVisitor;
+
+impl<'de> Visitor<'de> for QuantityVisitor {
+    type Value = Quantity;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("hex string for QUANTITY")
+    }
+
+    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        let buf: Vec<u8> = decode_hex(value).map_err(|e| E::custom(e.to_string()))?;
+
+        Ok(Quantity::from(buf))
+    }
+}
+
+impl<'de> Deserialize<'de> for Quantity {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_str(QuantityVisitor)
+    }
+}
+
+impl Serialize for Quantity {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&encode_hex_int(self.as_ref()))
+    }
+}
+
+// @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+macro_rules! impl_serde_for_fixed_size_bytes {
     ($bytes:ident, $visitor:ident, $length:expr) => {
         struct $visitor;
 
@@ -161,8 +242,7 @@ macro_rules! impl_serde_for_bytes {
             where
                 E: de::Error,
             {
-                let buf: [u8; $length] =
-                    prefix_hex::decode(value).map_err(|e| E::custom(e.to_string()))?;
+                let buf: [u8; $length] = decode_hex(value).map_err(|e| E::custom(e.to_string()))?;
 
                 Ok(Box::new(buf).into())
             }
@@ -182,20 +262,204 @@ macro_rules! impl_serde_for_bytes {
             where
                 S: Serializer,
             {
-                let hex = prefix_hex::encode(self.as_ref());
-
+                let hex = format!("0x{}", hex::encode(self.as_ref()));
                 serializer.serialize_str(&hex)
             }
         }
     };
 }
 
-impl_serde_for_bytes!(Bytes32, Bytes32Visitor, 32);
-impl_serde_for_bytes!(Address, AddressVisitor, 20);
-impl_serde_for_bytes!(BloomFilter, BloomFilterVisitor, 256);
-impl_serde_for_bytes!(Nonce, NonceVisitor, 8);
+impl_serde_for_fixed_size_bytes!(Bytes32, Bytes32Visitor, 32);
+impl_serde_for_fixed_size_bytes!(Address, AddressVisitor, 20);
+impl_serde_for_fixed_size_bytes!(BloomFilter, BloomFilterVisitor, 256);
+
+fn decode_hex<T>(value: &str) -> Result<T, Error>
+where
+    T: hex::FromHex<Error = hex::FromHexError>,
+{
+    let value = value.strip_prefix("0x").ok_or(Error::InvalidHexPrefix)?;
+
+    let buf: T = if value.len() % 2 != 0 {
+        let value = format!("0{}", &value);
+        T::from_hex(value).map_err(Error::DecodeHex)?
+    } else {
+        T::from_hex(value).map_err(Error::DecodeHex)?
+    };
+
+    Ok(buf)
+}
+
+fn encode_hex_impl(buf: &[u8], default_hex: &'static str) -> String {
+    let hex = hex::encode(buf);
+
+    match hex.find(|c| c != '0') {
+        Some(idx) => format!("0x{}", &hex[idx..]),
+        None => default_hex.to_owned(),
+    }
+}
+
+fn encode_hex(buf: &[u8]) -> String {
+    encode_hex_impl(buf, "0x")
+}
+
+fn encode_hex_int(buf: &[u8]) -> String {
+    encode_hex_impl(buf, "0x0")
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde::{de::DeserializeOwned, Serialize};
+    use std::fmt::Debug;
+
+    fn roundtrip<T: Serialize + DeserializeOwned + PartialEq + Debug>(val: &T) {
+        let other = serde_json::from_str(&serde_json::to_string(&val).unwrap()).unwrap();
+
+        assert_eq!(val, &other);
+    }
+
+    #[test]
+    fn test_index_roundtrip() {
+        roundtrip(&Index::default());
+        roundtrip(&Index::from(0));
+        roundtrip(&Index::from(std::u64::MAX));
+        roundtrip(&Index::from(25));
+    }
+
+    #[test]
+    fn test_index_serialize() {
+        assert_eq!(&serde_json::to_string(&Index::from(0)).unwrap(), "\"0x0\"");
+        assert_eq!(&serde_json::to_string(&Index::from(1)).unwrap(), "\"0x1\"");
+        assert_eq!(
+            &serde_json::to_string(&Index::from(25)).unwrap(),
+            "\"0x19\""
+        );
+    }
+
+    #[test]
+    fn test_status_roundtrip() {
+        roundtrip(&Status::Success);
+        roundtrip(&Status::Failure);
+    }
+
+    #[test]
+    fn test_transaction_type_roundtrip() {
+        roundtrip(&TransactionType::Legacy);
+        roundtrip(&TransactionType::AccessListType);
+        roundtrip(&TransactionType::DynamicFee);
+    }
+
+    #[test]
+    fn test_bytes32_roundtrip() {
+        roundtrip(&Bytes32::default());
+        roundtrip(&Bytes32::try_from((0..32).collect::<Vec<u8>>().as_slice()).unwrap());
+    }
+
+    #[test]
+    fn test_bytes32_zeroes_in_middle_roundtrip() {
+        roundtrip(
+            &Bytes32::try_from(
+                (0..15)
+                    .chain(std::iter::repeat(0).take(2))
+                    .chain(0..15)
+                    .collect::<Vec<u8>>()
+                    .as_slice(),
+            )
+            .unwrap(),
+        );
+    }
+
+    #[test]
+    fn test_bytes32_trailing_zeroes_roundtrip() {
+        roundtrip(
+            &Bytes32::try_from(
+                (0..15)
+                    .chain(std::iter::repeat(0).take(17))
+                    .collect::<Vec<u8>>()
+                    .as_slice(),
+            )
+            .unwrap(),
+        );
+    }
+
+    #[test]
+    fn test_bytes32_leading_zeroes_roundtrip() {
+        roundtrip(
+            &Bytes32::try_from(
+                std::iter::repeat(0)
+                    .take(16)
+                    .chain(0..16)
+                    .collect::<Vec<u8>>()
+                    .as_slice(),
+            )
+            .unwrap(),
+        );
+    }
+
+    #[test]
+    fn test_bytes_roundtrip() {
+        roundtrip(&Bytes::default());
+        roundtrip(&Bytes::from((1..32).collect::<Vec<u8>>().as_slice()));
+    }
+
+    #[test]
+    fn test_bytes_zeroes_in_middle_roundtrip() {
+        roundtrip(&Bytes::from(
+            (3..15)
+                .chain(std::iter::repeat(3).take(2))
+                .chain(0..15)
+                .collect::<Vec<u8>>()
+                .as_slice(),
+        ));
+    }
+
+    #[test]
+    fn test_bytes_trailing_zeroes_roundtrip() {
+        roundtrip(&Bytes::from(
+            (1..15)
+                .chain(std::iter::repeat(0).take(17))
+                .collect::<Vec<u8>>()
+                .as_slice(),
+        ));
+    }
+
+    #[test]
+    fn test_bytes_empty_serialize() {
+        assert_eq!(&serde_json::to_string(&Bytes::default()).unwrap(), "\"0x\"");
+    }
+
+    #[test]
+    fn test_quantity_roundtrip() {
+        roundtrip(&Bytes::default());
+        roundtrip(&Bytes::from((1..32).collect::<Vec<u8>>().as_slice()));
+    }
+
+    #[test]
+    fn test_quantity_zeroes_in_middle_roundtrip() {
+        roundtrip(&Bytes::from(
+            (3..15)
+                .chain(std::iter::repeat(3).take(2))
+                .chain(0..15)
+                .collect::<Vec<u8>>()
+                .as_slice(),
+        ));
+    }
+
+    #[test]
+    fn test_quantity_trailing_zeroes_roundtrip() {
+        roundtrip(&Bytes::from(
+            (1..15)
+                .chain(std::iter::repeat(0).take(17))
+                .collect::<Vec<u8>>()
+                .as_slice(),
+        ));
+    }
+
+    #[test]
+    fn test_quantity_empty_serialize() {
+        assert_eq!(
+            &serde_json::to_string(&Quantity::default()).unwrap(),
+            "\"0x0\""
+        );
+    }
 }

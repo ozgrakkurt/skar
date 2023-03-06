@@ -1,3 +1,4 @@
+use crate::{Error, Result};
 use arrayvec::ArrayVec;
 use serde::{Deserialize, Serialize};
 
@@ -14,13 +15,13 @@ pub struct BlockHeader {
     pub state_root: Hash,
     pub receipts_root: Hash,
     pub miner: Address,
-    pub difficulty: Unsigned256,
-    pub total_difficulty: Unsigned256,
-    pub extra_data: Box<[u8]>,
-    pub size: Unsigned256,
-    pub gas_limit: Unsigned256,
-    pub gas_used: Unsigned256,
-    pub timestamp: Unsigned256,
+    pub difficulty: Quantity,
+    pub total_difficulty: Quantity,
+    pub extra_data: Bytes,
+    pub size: Quantity,
+    pub gas_limit: Quantity,
+    pub gas_used: Quantity,
+    pub timestamp: Quantity,
     pub uncles: Box<[Hash]>,
 }
 
@@ -38,17 +39,17 @@ pub struct Transaction {
     pub block_hash: Hash,
     pub block_number: BlockNumber,
     pub from: Address,
-    pub gas: Unsigned256,
-    pub gas_price: Unsigned256,
+    pub gas: Quantity,
+    pub gas_price: Quantity,
     pub hash: Hash,
-    pub input: Box<[u8]>,
-    pub nonce: Unsigned256,
+    pub input: Bytes,
+    pub nonce: Quantity,
     pub to: Option<Address>,
     pub transaction_index: TransactionIndex,
-    pub value: Unsigned256,
-    pub v: Unsigned256,
-    pub r: Unsigned256,
-    pub s: Unsigned256,
+    pub value: Quantity,
+    pub v: Quantity,
+    pub r: Quantity,
+    pub s: Quantity,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -60,9 +61,9 @@ pub struct TransactionReceipt {
     pub block_number: BlockNumber,
     pub from: Address,
     pub to: Option<Address>,
-    pub cumulative_gas_used: Unsigned256,
-    pub effective_gas_price: Unsigned256,
-    pub gas_used: Unsigned256,
+    pub cumulative_gas_used: Quantity,
+    pub effective_gas_price: Quantity,
+    pub gas_used: Quantity,
     pub contract_address: Option<Address>,
     pub logs: Box<[Log]>,
     pub logs_bloom: BloomFilter,
@@ -129,8 +130,11 @@ pub struct Hash(Bytes32);
     derive_more::From,
     derive_more::Into,
     derive_more::Deref,
+    Serialize,
+    Deserialize,
 )]
-pub struct Nonce(Box<[u8; 8]>);
+#[serde(transparent)]
+pub struct Nonce(Bytes);
 
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, derive_more::From, derive_more::Into, derive_more::Deref,
@@ -160,11 +164,8 @@ pub struct Address(Box<[u8; 20]>);
     derive_more::From,
     derive_more::Into,
     derive_more::Deref,
-    Serialize,
-    Deserialize,
 )]
-#[serde(transparent)]
-pub struct Unsigned256(Bytes32);
+pub struct Quantity(Box<[u8]>);
 
 #[derive(
     Debug,
@@ -233,6 +234,19 @@ pub struct Bytes32(Box<[u8; 32]>);
     Debug,
     Default,
     Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    derive_more::From,
+    derive_more::Into,
+    derive_more::Deref,
+)]
+pub struct Bytes(Box<[u8]>);
+
+#[derive(
+    Debug,
+    Default,
+    Clone,
     Copy,
     PartialEq,
     Eq,
@@ -259,5 +273,48 @@ pub enum Status {
 impl Default for BloomFilter {
     fn default() -> Self {
         Self(Box::new([0; 256]))
+    }
+}
+
+macro_rules! impl_try_from_for_bytes {
+    ($typename:ident, $expected_len:expr) => {
+        impl TryFrom<&[u8]> for $typename {
+            type Error = Error;
+
+            fn try_from(buf: &[u8]) -> Result<Self> {
+                if buf.len() != $expected_len {
+                    return Err(Error::InvalidArrayLength($expected_len, buf.len()));
+                }
+                Ok(buf.try_into().map(Box::new).map(Self).unwrap())
+            }
+        }
+    };
+}
+
+impl_try_from_for_bytes!(Address, 20);
+impl_try_from_for_bytes!(BloomFilter, 256);
+impl_try_from_for_bytes!(Bytes32, 32);
+
+impl From<Vec<u8>> for Bytes {
+    fn from(b: Vec<u8>) -> Bytes {
+        Bytes(b.into())
+    }
+}
+
+impl From<&[u8]> for Bytes {
+    fn from(b: &[u8]) -> Bytes {
+        Bytes(b.into())
+    }
+}
+
+impl From<Vec<u8>> for Quantity {
+    fn from(b: Vec<u8>) -> Quantity {
+        Quantity(b.into())
+    }
+}
+
+impl From<&[u8]> for Quantity {
+    fn from(b: &[u8]) -> Quantity {
+        Quantity(b.into())
     }
 }
