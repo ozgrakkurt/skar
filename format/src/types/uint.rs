@@ -57,3 +57,35 @@ impl Serialize for UInt {
         serializer.serialize_str(&encode_hex(&self.to_be_bytes()))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::UInt;
+    use serde_test::{assert_de_tokens, assert_tokens, Token};
+
+    #[test]
+    fn test_serde_zero() {
+        assert_eq!(UInt::default(), UInt::from(0));
+
+        assert_tokens(&UInt::from(0), &[Token::Str("0x0")]);
+    }
+
+    #[test]
+    fn test_serde_max() {
+        assert_tokens(
+            &UInt::from(std::u64::MAX),
+            &[Token::Str("0xffffffffffffffff")],
+        );
+    }
+
+    #[test]
+    fn test_serde() {
+        assert_tokens(&UInt::from(19), &[Token::Str("0x13")]);
+    }
+
+    #[test]
+    #[should_panic(expected = "number too large")]
+    fn test_serde_overflow() {
+        assert_de_tokens(&UInt::from(19), &[Token::Str("0xffffffffffffffffa")]);
+    }
+}
