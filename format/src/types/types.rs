@@ -276,7 +276,7 @@ impl Default for BloomFilter {
     }
 }
 
-macro_rules! impl_try_from_for_bytes {
+macro_rules! impl_try_from_for_fixed_size_bytes {
     ($typename:ident, $expected_len:expr) => {
         impl TryFrom<&[u8]> for $typename {
             type Error = Error;
@@ -291,9 +291,9 @@ macro_rules! impl_try_from_for_bytes {
     };
 }
 
-impl_try_from_for_bytes!(Address, 20);
-impl_try_from_for_bytes!(BloomFilter, 256);
-impl_try_from_for_bytes!(Bytes32, 32);
+impl_try_from_for_fixed_size_bytes!(Address, 20);
+impl_try_from_for_fixed_size_bytes!(BloomFilter, 256);
+impl_try_from_for_fixed_size_bytes!(Bytes32, 32);
 
 impl From<Vec<u8>> for Bytes {
     fn from(b: Vec<u8>) -> Bytes {
