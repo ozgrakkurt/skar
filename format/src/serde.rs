@@ -318,6 +318,23 @@ mod tests {
         assert_eq!(val, &other);
     }
 
+    fn ignore_leading_zeroes_roundtrip<
+        T: Serialize + DeserializeOwned + PartialEq + Debug + Into<Box<[u8]>>,
+    >(
+        val: T,
+    ) {
+        let other: T = serde_json::from_str(&serde_json::to_string(&val).unwrap()).unwrap();
+
+        let val: Box<[u8]> = val.into();
+
+        let val = match val.as_ref().iter().enumerate().find(|(_, b)| **b != 0) {
+            Some((idx, _)) => &val.as_ref()[idx..],
+            None => &[0],
+        };
+
+        assert_eq!(val, other.into().as_ref());
+    }
+
     #[test]
     fn test_index_roundtrip() {
         roundtrip(&Index::default());
@@ -398,13 +415,13 @@ mod tests {
 
     #[test]
     fn test_bytes_roundtrip() {
-        roundtrip(&Bytes::default());
-        roundtrip(&Bytes::from((1..32).collect::<Vec<u8>>().as_slice()));
+        ignore_leading_zeroes_roundtrip(Bytes::default());
+        ignore_leading_zeroes_roundtrip(Bytes::from((1..32).collect::<Vec<u8>>().as_slice()));
     }
 
     #[test]
     fn test_bytes_zeroes_in_middle_roundtrip() {
-        roundtrip(&Bytes::from(
+        ignore_leading_zeroes_roundtrip(Bytes::from(
             (3..15)
                 .chain(std::iter::repeat(3).take(2))
                 .chain(0..15)
@@ -415,9 +432,20 @@ mod tests {
 
     #[test]
     fn test_bytes_trailing_zeroes_roundtrip() {
-        roundtrip(&Bytes::from(
+        ignore_leading_zeroes_roundtrip(Bytes::from(
             (1..15)
                 .chain(std::iter::repeat(0).take(17))
+                .collect::<Vec<u8>>()
+                .as_slice(),
+        ));
+    }
+
+    #[test]
+    fn test_bytes_leading_zeroes_roundtrip() {
+        ignore_leading_zeroes_roundtrip(Bytes::from(
+            std::iter::repeat(0)
+                .take(16)
+                .chain(0..16)
                 .collect::<Vec<u8>>()
                 .as_slice(),
         ));
@@ -430,13 +458,13 @@ mod tests {
 
     #[test]
     fn test_quantity_roundtrip() {
-        roundtrip(&Bytes::default());
-        roundtrip(&Bytes::from((1..32).collect::<Vec<u8>>().as_slice()));
+        ignore_leading_zeroes_roundtrip(Quantity::default());
+        ignore_leading_zeroes_roundtrip(Quantity::from((1..32).collect::<Vec<u8>>().as_slice()));
     }
 
     #[test]
     fn test_quantity_zeroes_in_middle_roundtrip() {
-        roundtrip(&Bytes::from(
+        ignore_leading_zeroes_roundtrip(Quantity::from(
             (3..15)
                 .chain(std::iter::repeat(3).take(2))
                 .chain(0..15)
@@ -447,9 +475,20 @@ mod tests {
 
     #[test]
     fn test_quantity_trailing_zeroes_roundtrip() {
-        roundtrip(&Bytes::from(
+        ignore_leading_zeroes_roundtrip(Quantity::from(
             (1..15)
                 .chain(std::iter::repeat(0).take(17))
+                .collect::<Vec<u8>>()
+                .as_slice(),
+        ));
+    }
+
+    #[test]
+    fn test_quantity_leading_zeroes_roundtrip() {
+        ignore_leading_zeroes_roundtrip(Quantity::from(
+            std::iter::repeat(0)
+                .take(16)
+                .chain(0..16)
                 .collect::<Vec<u8>>()
                 .as_slice(),
         ));
