@@ -111,5 +111,6 @@ mod tests {
         assert_tokens(&Data::from(hex!("004200")), &[Token::Str("0x004200")]);
         assert_tokens(&Data::from(hex!("420000")), &[Token::Str("0x420000")]);
         assert_tokens(&Data::from(hex!("000042")), &[Token::Str("0x000042")]);
+        assert_tokens(&Data::from(hex!("00")), &[Token::Str("0x00")]);
     }
 }

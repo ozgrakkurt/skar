@@ -139,4 +139,38 @@ mod tests {
             &[Token::Str("0x00420000")],
         );
     }
+
+    #[test]
+    fn test_from_vec_zero() {
+        assert_eq!(Quantity::default(), Quantity::from(vec![0]))
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_from_vec_empty() {
+        Quantity::from(Vec::new());
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_from_vec_leading_zeroes() {
+        Quantity::from(vec![0, 1]);
+    }
+
+    #[test]
+    fn test_from_slice_zero() {
+        assert_eq!(Quantity::default(), Quantity::from(vec![0].as_slice()))
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_from_slice_empty() {
+        Quantity::from(Vec::new().as_slice());
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_from_slice_leading_zeroes() {
+        Quantity::from(vec![0, 1].as_slice());
+    }
 }
